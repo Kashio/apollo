@@ -8,6 +8,6 @@ FetchContent_Declare(googletest
         )
 FetchContent_MakeAvailable(googletest)
 
-target_link_libraries(testlib PRIVATE APOLLO gtest_main)
+target_link_libraries(testlib PRIVATE apollo gtest_main)
 
 add_test(testlib testlib)

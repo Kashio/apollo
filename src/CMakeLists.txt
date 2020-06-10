@@ -1,12 +1,17 @@
 set(headers
-	"${apollo_SOURCE_DIR}/include/apollo/apollo.h")
+	"${apollo_SOURCE_DIR}/include/apollo/apollo.h"
+	"${apollo_SOURCE_DIR}/include/apollo/registry.h"
+	"${apollo_SOURCE_DIR}/include/apollo/component.h"
+	"${apollo_SOURCE_DIR}/include/apollo/component_storage.h"
+	"${apollo_SOURCE_DIR}/include/apollo/archetype.h"
+	"${apollo_SOURCE_DIR}/include/apollo/core/common.h"
+	"${apollo_SOURCE_DIR}/include/apollo/core/type_traits.h")
 
-add_library(apollo
-			${headers}
-			"apollo.cpp"
-			)
+add_library(apollo INTERFACE)
 
-target_include_directories(apollo PUBLIC
+target_sources(apollo INTERFACE $<BUILD_INTERFACE:${headers}>)
+
+target_include_directories(apollo INTERFACE
                        $<BUILD_INTERFACE:${apollo_SOURCE_DIR}/include>
                        $<INSTALL_INTERFACE:${APOLLO_INC_INSTALL_DIR}>
 					   )
