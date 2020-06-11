@@ -6,13 +6,13 @@
 
 namespace apollo
 {
-	static std::atomic<id_type> s_CurrentId;
+	static std::atomic<id_type> current_id = 0;
 
 	template <typename T>
 	class component
 	{
 	public:
-		inline static const id_type ID = s_CurrentId++;
+		inline static const id_type id = current_id++;
 	};
 };
 

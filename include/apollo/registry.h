@@ -7,6 +7,7 @@
 #include "component.h"
 #include <vector>
 #include <unordered_map>
+#include <tuple>
 #include <memory>
 
 namespace apollo
@@ -18,12 +19,12 @@ namespace apollo
 		std::unordered_map<entity, std::size_t> m_entity_index;
 	private:
 		template <typename ClassType, typename ReturnType, typename... Args>
-		bool archetype_has_all_query_args(archetype* archetype, function_traits<ReturnType(ClassType::*)(Args...)>) {
+		bool archetype_has_all_query_args(archetype* archetype, function_traits<ReturnType(ClassType::*)(Args...)const>) {
 			return archetype->has_all<std::decay_t<Args>...>();
 		}
 
 		template<typename Fn, typename ClassType, typename ReturnType, typename... Args>
-		void apply_to_archetype_components(archetype* archetype, Fn&& func, function_traits<ReturnType(ClassType::*)(Args...)>) {
+		void apply_to_archetype_components(archetype* archetype, Fn&& func, function_traits<ReturnType(ClassType::*)(Args...)const>) {
 			std::tuple<std::vector<std::decay_t<Args>>&...> components{ *archetype->get<std::decay_t<Args>>()... };
 			auto size = std::get<0>(components).size();
 			for (std::size_t i = 0; i < size; ++i) {
@@ -78,25 +79,25 @@ namespace apollo
 				// Entity doesn't belong to an Archetype
 				// We create an Archetype and add a component to it
 
-				// If AddComponent is called in different thread could cause problem
-				// With id = m_Archetypes.size() - 1 and context switching happening before we finish this code block
-				auto archetype = std::make_unique<archetype>(m_archetypes.size(), std::make_unique<component_storage_impl<TComponent>>());
-				archetype->add(entity);
-				archetype->set<TComponent>(entity, std::forward<Args>(args)...);
-				m_archetypes.push_back(std::move(archetype));
+				// If emplace is called in different thread could cause problem
+				// With id = m_archetypes.size() - 1 and context switching happening before we finish this code block
+				auto a = std::make_unique<archetype>(m_archetypes.size(), std::make_unique<component_storage_impl<TComponent>>());
+				a->add(entity);
+				a->set<TComponent>(entity, std::forward<Args>(args)...);
+				m_archetypes.push_back(std::move(a));
 				m_entity_index[entity] = m_archetypes.size() - 1;
 			}
 			else
 			{
 				// Entity does belong to an Archetype
 				// We check if new Archetype already exists or we should create it
-				archetype* archetype = m_archetypes[it->second].get();
+				archetype* a = m_archetypes[it->second].get();
 
-				archetype* new_archetype = archetype->get_edge(TComponent::ID);
+				archetype* new_archetype = a->get_edge(TComponent::id);
 
 				if (!new_archetype)
 				{
-					new_archetype = archetype->with_added_component<TComponent>(m_archetypes.size());
+					new_archetype = a->with_added_component<TComponent>(m_archetypes.size());
 					m_archetypes.emplace_back(new_archetype);
 					m_entity_index[entity] = m_archetypes.size() - 1;
 				}
@@ -107,12 +108,12 @@ namespace apollo
 
 				new_archetype->add(entity);
 				new_archetype->set<TComponent>(entity, std::forward<Args>(args)...);
-				archetype->move(*new_archetype, entity);
+				a->move(*new_archetype, entity);
 			}
 		}
 
 		template <typename TComponent>
-		void remove(Entity entity)
+		void remove(entity entity)
 		{
 			static_assert(std::is_base_of<component<TComponent>, TComponent>::value, "type parameter of this class must derive from component");
 			auto it = m_EntityIndex.find(entity);
@@ -122,7 +123,7 @@ namespace apollo
 				// We remove the entity from the Archetype
 				archetype* archetype = m_archetypes[it->second].get();
 
-				archetype* new_archetype = archetype->get_ddge(TComponent::ID);
+				archetype* new_archetype = archetype->get_ddge(TComponent::id);
 
 				if (!new_archetype)
 				{

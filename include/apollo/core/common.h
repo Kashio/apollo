@@ -5,8 +5,8 @@
 
 namespace apollo
 {
-	typedef id_type = uint64_t;
-	typedef entity = id_type;
+	typedef uint64_t id_type;
+	typedef id_type entity;
 }
 
 #endif // !APOLLO_CORE_COMMON_H

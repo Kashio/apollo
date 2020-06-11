@@ -1,6 +1,7 @@
 #ifndef APOLLO_ARCHETYPE_H
 #define APOLLO_ARCHETYPE_H
 
+#include <algorithm>
 #include "component_storage.h"
 
 namespace apollo
@@ -40,7 +41,7 @@ namespace apollo
 		template<typename Component>
 		inline component_storage_impl<Component>* get_storage()
 		{
-			int index = m_signature[Component::ID];
+			int index = m_signature[Component::id];
 			if (index == InvalidStorageIndex)
 			{
 				return nullptr;
@@ -50,7 +51,7 @@ namespace apollo
 		}
 	public:
 		archetype(const id_type id, std::unique_ptr<component_storage>&& storage)
-			: m_Id(id)
+			: m_id(id)
 		{
 			m_storages.push_back(std::move(storage));
 			add_to_signature(0, m_storages[0]->get_id());
@@ -128,12 +129,12 @@ namespace apollo
 		template <typename... TComponent>
 		void copy(archetype& destination, entity entity)
 		{
-			std::size_t index = search(entity);
+			const std::size_t index = search(entity);
 			if (index >= m_entities.size())
 				return;
 			std::size_t i = 0;
 			std::for_each(m_storages.begin(), m_storages.end(), [&destination, &index, &i](auto&& s) {
-				if (((s->get_id() != TComponent::ID) && ...))
+				if (((s->get_id() != TComponent::id) && ...))
 				{
 					s->copy(*destination.m_storages[i].get(), index);
 				}
@@ -144,12 +145,12 @@ namespace apollo
 		template <typename... TComponent>
 		void move(archetype& destination, entity entity)
 		{
-			std::size_t index = search(entity);
+			const std::size_t index = search(entity);
 			if (index >= m_entities.size())
 				return;
 			std::size_t i = 0;
 			std::for_each(m_storages.begin(), m_storages.end(), [&destination, &index, &i](auto&& s) {
-				if (((s->get_id() != TComponent::ID) && ...))
+				if (((s->get_id() != TComponent::id) && ...))
 				{
 					s->move(*destination.m_storages[i].get(), index);
 				}
@@ -163,13 +164,13 @@ namespace apollo
 		template<typename... Component>
 		bool has_all()
 		{
-			return ((Component::ID < m_signature.size() && m_signature[Component::ID] != InvalidStorageIndex) && ...);
+			return ((Component::id < m_signature.size() && m_signature[Component::id] != InvalidStorageIndex) && ...);
 		}
 
 		template<typename Component>
 		archetype* with_added_component(id_type id)
 		{
-			if (!get_edge(Component::ID))
+			if (!get_edge(Component::id))
 			{
 				storage_vec storage;
 				storage.reserve(m_storages.size() + 1);
@@ -180,36 +181,36 @@ namespace apollo
 
 				storage.push_back(std::make_unique<component_storage_impl<Component>>());
 
-				m_edges.resize(Component::ID + 1, nullptr);
-				m_edges[Component::ID] = new archetype(id, storage);
-				m_edges[Component::ID]->m_edges.resize(Component::ID + 1, nullptr);
-				m_edges[Component::ID]->m_edges[Component::ID] = this;
+				m_edges.resize(Component::id + 1, nullptr);
+				m_edges[Component::id] = new archetype(id, storage);
+				m_edges[Component::id]->m_edges.resize(Component::id + 1, nullptr);
+				m_edges[Component::id]->m_edges[Component::id] = this;
 			}
-			return m_edges[Component::ID];
+			return m_edges[Component::id];
 		}
 
 		template<typename Component>
 		archetype* with_removed_component(id_type id)
 		{
-			if (!get_edge(Component::ID))
+			if (!get_edge(Component::id))
 			{
 				storage_vec storage;
 				storage.reserve(m_storages.size() - 1);
 
 				std::for_each(m_storages.begin(), m_storages.end(), [&storage](auto&& s)
 				{
-					if (s->get_id() != Component::ID)
+					if (s->get_id() != Component::id)
 					{
 						storage.push_back(s->create());
 					}
 				});
 
-				m_edges.resize(Component::ID + 1, nullptr);
-				m_edges[Component::ID] = new archetype(id, storage);
-				m_edges[Component::ID]->m_edges.resize(Component::ID + 1, nullptr);
-				m_edges[Component::ID]->m_edges[Component::ID] = this;
+				m_edges.resize(Component::id + 1, nullptr);
+				m_edges[Component::id] = new archetype(id, storage);
+				m_edges[Component::id]->m_edges.resize(Component::id + 1, nullptr);
+				m_edges[Component::id]->m_edges[Component::id] = this;
 			}
-			return m_edges[Component::ID];
+			return m_edges[Component::id];
 		}
 	};
 }

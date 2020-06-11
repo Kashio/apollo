@@ -29,7 +29,7 @@ namespace apollo
 	public:
 		inline id_type get_id() const override
 		{
-			return Component::ID;
+			return Component::id;
 		}
 
 		std::unique_ptr<component_storage> create() const override
@@ -45,17 +45,23 @@ namespace apollo
 		void remove(const std::size_t index) override
 		{
 			std::swap(m_components[index], m_components.back());
-			m_Components.resize(m_components.size() - 1);
+			m_components.resize(m_components.size() - 1);
 		}
 
 		void copy(component_storage& destination, const std::size_t index) override
 		{
-			static_cast<component_storage_impl&>(destination).m_components[index] = m_components[index];
+			auto d = static_cast<component_storage_impl&>(destination);
+			if (d.m_components.capacity() < index)
+				d.m_components.reserve(index);
+			d.m_components[index] = m_components[index];
 		}
 
 		void move(component_storage& destination, const std::size_t index) override
 		{
-			static_cast<component_storage_impl&>(destination).m_components[index] = std::move(m_components[index]);
+			auto d = static_cast<component_storage_impl&>(destination);
+			if (d.m_components.capacity() < index)
+				d.m_components.reserve(index);
+			d.m_components[index] = std::move(m_components[index]);
 		}
 	};
 }
