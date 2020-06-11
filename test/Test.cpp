@@ -15,8 +15,10 @@ TEST(Test, Test1)
 	registry.emplace<mass>(e1, 15.0f);
 
 	registry.emplace<transform>(e2, 1.0f, 1.0f, 1.0f);
-	registry.emplace<mass>(e2, 0.0f);
+	registry.emplace<mass>(e2, 12.0f);
 	registry.emplace<mass>(e3, 5.3f);
+
+	registry.remove<transform>(e2);
 
 	registry.create_system<move_system>();
 

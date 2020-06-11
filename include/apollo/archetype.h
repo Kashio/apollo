@@ -8,8 +8,7 @@ namespace apollo
 {
 	using storage_vec = std::vector<std::unique_ptr<component_storage>>;
 
-	const int InvalidStorageIndex = -1;
-
+	const int invalid_storage_index = -1;
 
 	class archetype
 	{
@@ -32,7 +31,7 @@ namespace apollo
 		void add_to_signature(const std::size_t index, id_type component_id)
 		{
 			if (m_signature.size() <= component_id) {
-				m_signature.resize(component_id + 1, InvalidStorageIndex);
+				m_signature.resize(component_id + 1, invalid_storage_index);
 			}
 			m_signature[component_id] = index;
 			++m_num_components;
@@ -42,14 +41,30 @@ namespace apollo
 		inline component_storage_impl<Component>* get_storage()
 		{
 			int index = m_signature[Component::id];
-			if (index == InvalidStorageIndex)
+			if (index == invalid_storage_index)
 			{
 				return nullptr;
 			}
 			auto& s = m_storages[index];
 			return static_cast<component_storage_impl<Component>*>(s.get());
 		}
+
+		inline component_storage* get_storage(const id_type component_id)
+		{
+			int index = m_signature[component_id];
+			if (index == invalid_storage_index)
+			{
+				return nullptr;
+			}
+			auto& s = m_storages[index];
+			return s.get();
+		}
 	public:
+		archetype(const id_type id)
+			: m_id(id)
+		{
+		}
+
 		archetype(const id_type id, std::unique_ptr<component_storage>&& storage)
 			: m_id(id)
 		{
@@ -136,7 +151,7 @@ namespace apollo
 			std::for_each(m_storages.begin(), m_storages.end(), [&destination, &index, &i](auto&& s) {
 				if (((s->get_id() != TComponent::id) && ...))
 				{
-					s->copy(*destination.m_storages[i].get(), index);
+					s->copy(*destination.get_storage(s->get_id()), index);
 				}
 				++i;
 			});
@@ -152,7 +167,7 @@ namespace apollo
 			std::for_each(m_storages.begin(), m_storages.end(), [&destination, &index, &i](auto&& s) {
 				if (((s->get_id() != TComponent::id) && ...))
 				{
-					s->move(*destination.m_storages[i].get(), index);
+					s->move(*destination.get_storage(s->get_id()), index);
 				}
 				s->remove(index);
 				++i;
@@ -164,7 +179,7 @@ namespace apollo
 		template<typename... Component>
 		bool has_all()
 		{
-			return ((Component::id < m_signature.size() && m_signature[Component::id] != InvalidStorageIndex) && ...);
+			return ((Component::id < m_signature.size() && m_signature[Component::id] != invalid_storage_index) && ...);
 		}
 
 		template<typename Component>
@@ -205,14 +220,36 @@ namespace apollo
 					}
 				});
 
-				m_edges.resize(Component::id + 1, nullptr);
+				//m_edges.resize(Component::id + 1, nullptr);
 				m_edges[Component::id] = new archetype(id, storage);
 				m_edges[Component::id]->m_edges.resize(Component::id + 1, nullptr);
 				m_edges[Component::id]->m_edges[Component::id] = this;
 			}
 			return m_edges[Component::id];
 		}
+
+		friend class registry;
+		friend bool operator==(const archetype& lhs, const archetype& rhs);
+		friend bool operator!=(const archetype& lhs, const archetype& rhs);
 	};
+
+	bool operator==(const archetype& lhs, const archetype& rhs)
+	{
+		if (lhs.m_signature.size() != rhs.m_signature.size())
+			return false;
+		for (std::size_t i = 0; i < lhs.m_signature.size(); ++i)
+		{
+			if ((lhs.m_signature[i] == invalid_storage_index && rhs.m_signature[i] != invalid_storage_index) ||
+				(lhs.m_signature[i] != invalid_storage_index && rhs.m_signature[i] == invalid_storage_index))
+				return false;
+		}
+		return true;
+	}
+
+	bool operator!=(const archetype& lhs, const archetype& rhs)
+	{
+		return !(lhs == rhs);
+	}
 }
 
 #endif // !APOLLO_ARCHETYPE_H

@@ -6,7 +6,6 @@
 #include "system.h"
 #include "component.h"
 #include <vector>
-#include <unordered_map>
 #include <tuple>
 #include <memory>
 
@@ -16,7 +15,7 @@ namespace apollo
 	private:
 		std::vector<std::unique_ptr<archetype>> m_archetypes;
 		std::vector<std::unique_ptr<system>> m_systems;
-		std::unordered_map<entity, std::size_t> m_entity_index;
+		std::vector<std::size_t> m_entity_index;
 	private:
 		template <typename ClassType, typename ReturnType, typename... Args>
 		bool archetype_has_all_query_args(archetype* archetype, function_traits<ReturnType(ClassType::*)(Args...)const>) {
@@ -33,11 +32,29 @@ namespace apollo
 				}, components);
 			}
 		}
+
+		archetype* find_archetype_with_same_signature(archetype& archetpye)
+		{
+			for (const auto& a : m_archetypes)
+			{
+				if (*a.get() == archetpye)
+					return a.get();
+			}
+			return nullptr;
+		}
 	public:
+		registry()
+		{
+			auto empty_archetype = new archetype(m_archetypes.size());
+			m_archetypes.emplace_back(empty_archetype);
+		}
+
 		const entity& create()
 		{
 			static entity s_current_id = 0;
-			return s_current_id++;
+			entity current = s_current_id++;
+			m_entity_index.push_back(0);
+			return current;
 		}
 
 		void update()
@@ -73,71 +90,57 @@ namespace apollo
 		void emplace(entity entity, Args&&... args)
 		{
 			static_assert(std::is_base_of<component<TComponent>, TComponent>::value, "type parameter of this class must derive from component");
-			auto it = m_entity_index.find(entity);
-			if (it == m_entity_index.end())
+			archetype* context = m_archetypes[m_entity_index[entity]].get();
+			archetype* new_archetype = context->get_edge(TComponent::id);
+
+			if (!new_archetype)
 			{
-				// Entity doesn't belong to an Archetype
-				// We create an Archetype and add a component to it
-
-				// If emplace is called in different thread could cause problem
-				// With id = m_archetypes.size() - 1 and context switching happening before we finish this code block
-				auto a = std::make_unique<archetype>(m_archetypes.size(), std::make_unique<component_storage_impl<TComponent>>());
-				a->add(entity);
-				a->set<TComponent>(entity, std::forward<Args>(args)...);
-				m_archetypes.push_back(std::move(a));
-				m_entity_index[entity] = m_archetypes.size() - 1;
-			}
-			else
-			{
-				// Entity does belong to an Archetype
-				// We check if new Archetype already exists or we should create it
-				archetype* a = m_archetypes[it->second].get();
-
-				archetype* new_archetype = a->get_edge(TComponent::id);
-
-				if (!new_archetype)
+				new_archetype = context->with_added_component<TComponent>(m_archetypes.size());
+				archetype* existing_archetype = find_archetype_with_same_signature(*new_archetype);
+				if (!existing_archetype)
 				{
-					new_archetype = a->with_added_component<TComponent>(m_archetypes.size());
 					m_archetypes.emplace_back(new_archetype);
-					m_entity_index[entity] = m_archetypes.size() - 1;
 				}
 				else
 				{
-					m_entity_index[entity] = new_archetype->get_id();
+					new_archetype = existing_archetype;
+					context->m_edges[TComponent::id] = existing_archetype;
+					existing_archetype->m_edges[TComponent::id] = context;
 				}
-
-				new_archetype->add(entity);
-				new_archetype->set<TComponent>(entity, std::forward<Args>(args)...);
-				a->move(*new_archetype, entity);
 			}
+			m_entity_index[entity] = new_archetype->get_id();
+			new_archetype->add(entity);
+			new_archetype->set<TComponent>(entity, std::forward<Args>(args)...);
+			context->move<TComponent>(*new_archetype, entity);
 		}
 
 		template <typename TComponent>
 		void remove(entity entity)
 		{
 			static_assert(std::is_base_of<component<TComponent>, TComponent>::value, "type parameter of this class must derive from component");
-			auto it = m_EntityIndex.find(entity);
-			if (it != m_EntityIndex.end())
+			if (m_entity_index[entity])
 			{
-				// Entity does belong to an Archetype
-				// We remove the entity from the Archetype
-				archetype* archetype = m_archetypes[it->second].get();
-
-				archetype* new_archetype = archetype->get_ddge(TComponent::id);
+				archetype* context = m_archetypes[m_entity_index[entity]].get();
+				archetype* new_archetype = context->get_edge(TComponent::id);
 
 				if (!new_archetype)
 				{
-					new_archetype = archetype->with_removed_component<TComponent>(m_archetypes.size());
-					m_archetypes.emplace_back(new_archetype);
-					m_entity_index[entity] = m_archetypes.size() - 1;
+					new_archetype = context->with_removed_component<TComponent>(m_archetypes.size());
+					archetype* existing_archetype = find_archetype_with_same_signature(*new_archetype);
+					if (!existing_archetype)
+					{
+						m_archetypes.emplace_back(new_archetype);
+					}
+					else
+					{
+						new_archetype = existing_archetype;
+						context->m_edges[TComponent::id] = existing_archetype;
+						existing_archetype->m_edges[TComponent::id] = context;
+					}
 				}
-				else
-				{
-					m_entity_index[entity] = new_archetype->get_id();
-				}
-
+				m_entity_index[entity] = new_archetype->get_id();
 				new_archetype->add(entity);
-				archetype->move<TComponent>(*new_archetype, entity);
+				context->move<TComponent>(*new_archetype, entity);
 			}
 		}
 	};

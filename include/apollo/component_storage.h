@@ -50,18 +50,12 @@ namespace apollo
 
 		void copy(component_storage& destination, const std::size_t index) override
 		{
-			auto d = static_cast<component_storage_impl&>(destination);
-			if (d.m_components.capacity() < index)
-				d.m_components.reserve(index);
-			d.m_components[index] = m_components[index];
+			static_cast<component_storage_impl&>(destination).m_components.back() = m_components[index];
 		}
 
 		void move(component_storage& destination, const std::size_t index) override
 		{
-			auto d = static_cast<component_storage_impl&>(destination);
-			if (d.m_components.capacity() < index)
-				d.m_components.reserve(index);
-			d.m_components[index] = std::move(m_components[index]);
+			static_cast<component_storage_impl&>(destination).m_components.back() = std::move(m_components[index]);
 		}
 	};
 }
