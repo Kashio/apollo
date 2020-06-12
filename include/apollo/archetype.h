@@ -8,14 +8,14 @@ namespace apollo
 {
 	using storage_vec = std::vector<std::unique_ptr<component_storage>>;
 
-	const int invalid_storage_index = -1;
+	const std::size_t invalid_storage_index = -1;
 
 	class archetype
 	{
 	private:
 		id_type m_id;
 		std::size_t m_num_components = 0;
-		std::vector<int> m_signature;
+		std::vector<id_type> m_signature;
 		storage_vec m_storages;
 		std::vector<entity> m_entities;
 		std::vector<archetype*> m_edges;
@@ -23,22 +23,30 @@ namespace apollo
 		explicit archetype(const id_type id, storage_vec& storages)
 			: m_id(id), m_storages(std::move(storages))
 		{
-			for (std::size_t i = 0; i < m_storages.size(); ++i) {
+			for (std::size_t i = 0; i < m_storages.size(); ++i)
+			{
 				add_to_signature(i, m_storages[i]->get_id());
 			}
 		}
 
-		void add_to_signature(const std::size_t index, id_type component_id)
+		void add_to_signature(const std::size_t index, const id_type component_id)
 		{
-			if (m_signature.size() <= component_id) {
+			if (m_signature.size() <= component_id)
+			{
 				m_signature.resize(component_id + 1, invalid_storage_index);
 			}
 			m_signature[component_id] = index;
 			++m_num_components;
 		}
 
+		void remove_from_signature(const id_type component_id)
+		{
+			m_signature[component_id] = invalid_storage_index;
+			--m_num_components;
+		}
+
 		template<typename Component>
-		inline component_storage_impl<Component>* get_storage()
+		component_storage_impl<Component>* get_storage()
 		{
 			int index = m_signature[Component::id];
 			if (index == invalid_storage_index)
@@ -49,7 +57,7 @@ namespace apollo
 			return static_cast<component_storage_impl<Component>*>(s.get());
 		}
 
-		inline component_storage* get_storage(const id_type component_id)
+		component_storage* get_storage(const id_type component_id)
 		{
 			int index = m_signature[component_id];
 			if (index == invalid_storage_index)
@@ -196,7 +204,8 @@ namespace apollo
 
 				storage.push_back(std::make_unique<component_storage_impl<Component>>());
 
-				m_edges.resize(Component::id + 1, nullptr);
+				if (m_edges.capacity() < Component::id + 1)
+					m_edges.resize(Component::id + 1, nullptr);
 				m_edges[Component::id] = new archetype(id, storage);
 				m_edges[Component::id]->m_edges.resize(Component::id + 1, nullptr);
 				m_edges[Component::id]->m_edges[Component::id] = this;
@@ -220,7 +229,8 @@ namespace apollo
 					}
 				});
 
-				//m_edges.resize(Component::id + 1, nullptr);
+				if (m_edges.capacity() < Component::id + 1)
+					m_edges.resize(Component::id + 1, nullptr);
 				m_edges[Component::id] = new archetype(id, storage);
 				m_edges[Component::id]->m_edges.resize(Component::id + 1, nullptr);
 				m_edges[Component::id]->m_edges[Component::id] = this;

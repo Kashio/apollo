@@ -95,10 +95,14 @@ namespace apollo
 
 			if (!new_archetype)
 			{
-				new_archetype = context->with_added_component<TComponent>(m_archetypes.size());
-				archetype* existing_archetype = find_archetype_with_same_signature(*new_archetype);
+				archetype temp{ 0 };
+				temp.m_signature = context->m_signature;
+				temp.add_to_signature(0, TComponent::id);
+
+				archetype* existing_archetype = find_archetype_with_same_signature(temp);
 				if (!existing_archetype)
 				{
+					new_archetype = context->with_added_component<TComponent>(m_archetypes.size());
 					m_archetypes.emplace_back(new_archetype);
 				}
 				else
@@ -125,10 +129,14 @@ namespace apollo
 
 				if (!new_archetype)
 				{
-					new_archetype = context->with_removed_component<TComponent>(m_archetypes.size());
-					archetype* existing_archetype = find_archetype_with_same_signature(*new_archetype);
+					archetype temp{ 0 };
+					temp.m_signature = context->m_signature;
+					temp.remove_from_signature(TComponent::id);
+
+					archetype* existing_archetype = find_archetype_with_same_signature(temp);
 					if (!existing_archetype)
 					{
+						new_archetype = context->with_removed_component<TComponent>(m_archetypes.size());
 						m_archetypes.emplace_back(new_archetype);
 					}
 					else
