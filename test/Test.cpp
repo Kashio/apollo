@@ -20,7 +20,15 @@ TEST(Test, Test1)
 
 	registry.remove<transform>(e2);
 
-	registry.destroy(e1);
+	auto v1 = registry.view<transform>();
+
+	for (auto& entity : v1)
+	{
+		auto t = v1.get<transform>(entity);
+		int x = 8;
+	}
+
+	//registry.destroy(e1);
 
 	registry.create_system<move_system>();
 

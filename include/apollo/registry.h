@@ -5,6 +5,7 @@
 #include "archetype.h"
 #include "system.h"
 #include "component.h"
+#include "view.h"
 #include <vector>
 #include <tuple>
 #include <memory>
@@ -18,15 +19,18 @@ namespace apollo
 		std::vector<std::size_t> m_entity_index;
 	private:
 		template <typename ClassType, typename ReturnType, typename... Args>
-		bool archetype_has_all_query_args(archetype* archetype, function_traits<ReturnType(ClassType::*)(Args...)const>) {
+		bool archetype_has_all_query_args(archetype* archetype, function_traits<ReturnType(ClassType::*)(Args...)const>)
+		{
 			return archetype->has_all<std::decay_t<Args>...>();
 		}
 
 		template<typename Fn, typename ClassType, typename ReturnType, typename... Args>
-		void apply_to_archetype_components(archetype* archetype, Fn&& func, function_traits<ReturnType(ClassType::*)(Args...)const>) {
+		void apply_to_archetype_components(archetype* archetype, Fn&& func, function_traits<ReturnType(ClassType::*)(Args...)const>)
+		{
 			std::tuple<std::vector<std::decay_t<Args>>&...> components{ *archetype->get<std::decay_t<Args>>()... };
 			auto size = std::get<0>(components).size();
-			for (std::size_t i = 0; i < size; ++i) {
+			for (std::size_t i = 0; i < size; ++i)
+			{
 				std::apply([&](auto&... vecs) {
 					func(vecs[i]...);
 				}, components);
@@ -82,6 +86,12 @@ namespace apollo
 					apply_to_archetype_components(archetype.get(), fn, traits::self());
 				}
 			}
+		}
+
+		template <typename... TComponents>
+		auto view()
+		{
+			return apollo::view<TComponents...>(this);
 		}
 
 		template <typename TSystem, typename... Args>
@@ -157,7 +167,27 @@ namespace apollo
 				context->move<TComponent>(*new_archetype, entity);
 			}
 		}
+
+		inline const std::vector<std::unique_ptr<archetype>>& get_archetypes() const
+		{
+			return m_archetypes;
+		}
+
+		template <typename... TComponents>
+		std::vector<std::size_t> get_archetype_indices() const
+		{
+			std::vector<std::size_t> archretype_indices;
+			for (std::size_t i = 0; i < m_archetypes.size(); ++i)
+			{
+				auto& archetype = m_archetypes[i];
+				if (archetype->has_all<std::decay_t<TComponents>...>() && archetype->get_entities().size() > 0)
+				{
+					archretype_indices.push_back(i);
+				}
+			}
+			return archretype_indices;
+		}
 	};
 }
-	
+
 #endif // !APOLLO_REGISTRY_H

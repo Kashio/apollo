@@ -4,6 +4,7 @@ set(headers
 	"${apollo_SOURCE_DIR}/include/apollo/component.h"
 	"${apollo_SOURCE_DIR}/include/apollo/component_storage.h"
 	"${apollo_SOURCE_DIR}/include/apollo/archetype.h"
+	"${apollo_SOURCE_DIR}/include/apollo/view.h"
 	"${apollo_SOURCE_DIR}/include/apollo/core/common.h"
 	"${apollo_SOURCE_DIR}/include/apollo/core/type_traits.h")
 

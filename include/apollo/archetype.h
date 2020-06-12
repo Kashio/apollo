@@ -85,6 +85,16 @@ namespace apollo
 			return m_id;
 		}
 
+		inline std::vector<entity>& get_entities()
+		{
+			return m_entities;
+		}
+
+		inline const std::vector<entity>& get_entities() const
+		{
+			return m_entities;
+		}
+
 		inline archetype* get_edge(const std::size_t component_id)
 		{
 			if (component_id < m_edges.size())
