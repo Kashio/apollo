@@ -57,6 +57,12 @@ namespace apollo
 			return current;
 		}
 
+		void destroy(const entity& entity)
+		{
+			m_archetypes[m_entity_index[entity]]->remove(entity);
+			m_entity_index[entity] = 0;
+		}
+
 		void update()
 		{
 			for (auto& system : m_systems)
