@@ -45,4 +45,6 @@ TEST(Test, Test1)
 	registry.create_system<move_system>();
 
 	registry.update();
+
+	registry.update();
 }

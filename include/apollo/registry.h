@@ -6,6 +6,7 @@
 #include "system.h"
 #include "component.h"
 #include "view.h"
+#include "command/command_buffer.h"
 #include <vector>
 #include <tuple>
 #include <memory>
@@ -79,6 +80,7 @@ namespace apollo
 		void destroy(const entity& entity)
 		{
 			m_archetypes[m_entity_index[entity]]->remove(entity);
+			m_archetypes[0]->add(entity);
 			m_entity_index[entity] = 0;
 		}
 
@@ -117,6 +119,11 @@ namespace apollo
 			static_assert(std::is_base_of<system, TSystem>::value, "type parameter of this class must derive from system");
 			m_systems.push_back(std::make_unique<TSystem>(std::forward<Args>(args)...));
 			return *dynamic_cast<TSystem*>(m_systems.back().get());
+		}
+
+		command_buffer create_command_buffer()
+		{
+			return command_buffer(this);
 		}
 
 		template <typename TComponent, typename... Args>
