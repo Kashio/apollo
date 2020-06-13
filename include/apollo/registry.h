@@ -19,7 +19,13 @@ namespace apollo
 		std::vector<std::size_t> m_entity_index;
 	private:
 		template <typename ClassType, typename ReturnType, typename Entity, typename... Args>
-		bool archetype_has_all_query_args(archetype* archetype, function_traits<ReturnType(ClassType::*)(Entity, Args...)const>)
+		bool archetype_has_all_query_args_with_entity(archetype* archetype, function_traits<ReturnType(ClassType::*)(Entity, Args...)const>)
+		{
+			return archetype->has_all<std::decay_t<Args>...>();
+		}
+
+		template <typename ClassType, typename ReturnType, typename... Args>
+		bool archetype_has_all_query_args_without_entity(archetype* archetype, function_traits<ReturnType(ClassType::*)(Args...)const>)
 		{
 			return archetype->has_all<std::decay_t<Args>...>();
 		}
@@ -92,7 +98,7 @@ namespace apollo
 			//static_assert(std::is_same<t::arg<0>, entity>::value, "first type parameter of query must be of type apollo::entity");
 			for (auto& archetype : m_archetypes)
 			{
-				if (archetype_has_all_query_args(archetype.get(), t))
+				if (archetype_has_all_query_args_with_entity(archetype.get(), t))
 				{
 					apply_to_archetype_components(archetype.get(), fn, t);
 				}
@@ -197,7 +203,7 @@ namespace apollo
 			{
 				archetype* context = m_archetypes[m_entity_index[entity]].get();
 				typedef function_traits<decltype(fn)> traits;
-				if (archetype_has_all_query_args(context, traits::self()))
+				if (archetype_has_all_query_args_without_entity(context, traits::self()))
 				{
 					apply_to_archetype_entity_components(context, fn, traits::self(), entity);
 				}
