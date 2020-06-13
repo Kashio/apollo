@@ -142,6 +142,8 @@ namespace apollo
 			if (m_entity_index[entity])
 			{
 				archetype* context = m_archetypes[m_entity_index[entity]].get();
+				if (!context->has_all<TComponent>())
+					return;
 				archetype* new_archetype = context->get_edge(TComponent::id);
 
 				if (!new_archetype)
@@ -167,6 +169,14 @@ namespace apollo
 				new_archetype->add(entity);
 				context->move<TComponent>(*new_archetype, entity);
 			}
+		}
+
+		template <typename... TComponents>
+		void clear()
+		{
+			static_assert(((std::is_base_of<component<TComponents>, TComponents>::value) && ...), "type parameters TComponents must derive from component");
+			for (std::size_t i = 0; i < m_entity_index.size(); ++i)
+				((remove<TComponents>(i)), ...);
 		}
 
 		template <typename TComponent>

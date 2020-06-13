@@ -29,6 +29,8 @@ TEST(Test, Test1)
 		int x = 8;
 	}
 
+	registry.clear<mass>();
+
 	//registry.destroy(e1);
 
 	registry.create_system<move_system>();
