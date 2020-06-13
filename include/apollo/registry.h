@@ -139,7 +139,7 @@ namespace apollo
 			}
 			m_entity_index[entity] = new_archetype->get_id();
 			new_archetype->add(entity);
-			new_archetype->set<TComponent>(entity, std::forward<Args>(args)...);
+			new_archetype->set_at<TComponent>(new_archetype->m_entities.size() - 1, std::forward<Args>(args)...);
 			context->move<TComponent>(*new_archetype, entity);
 			return new_archetype->get_component_at<TComponent>(new_archetype->m_entities.size() - 1);
 		}
@@ -199,6 +199,16 @@ namespace apollo
 				{
 					apply_to_archetype_entity_components(context, fn, traits::self(), entity);
 				}
+			}
+		}
+
+		template <typename TComponent, typename... Args>
+		void replace(const entity& entity, Args&&... args)
+		{
+			if (m_entity_index[entity])
+			{
+				archetype* context = m_archetypes[m_entity_index[entity]].get();
+				context->set<TComponent>(entity, std::forward<Args>(args)...);
 			}
 		}
 

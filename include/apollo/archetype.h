@@ -197,7 +197,7 @@ namespace apollo
 			return std::optional<std::tuple<TComponents&...>>{components};
 		}
 
-		void add(entity entity)
+		void add(const entity& entity)
 		{
 			std::for_each(m_storages.begin(), m_storages.end(), [](auto&& s) {
 				s->add();
@@ -211,7 +211,7 @@ namespace apollo
 		}
 
 		template<typename Component, typename... Args>
-		void set(entity entity, Args&&... args)
+		void set(const entity& entity, Args&&... args)
 		{
 			auto storage = get_storage<Component>();
 			if (storage)
@@ -223,7 +223,19 @@ namespace apollo
 			}
 		}
 
-		void remove(entity entity)
+		template<typename Component, typename... Args>
+		void set_at(const std::size_t index, Args&&... args)
+		{
+			auto storage = get_storage<Component>();
+			if (storage)
+			{
+				if (index >= m_entities.size())
+					return;
+				storage->m_components[index] = Component(std::forward<Args>(args)...);
+			}
+		}
+
+		void remove(const entity& entity)
 		{
 			// TODO: doing sparse like set removal which is fast for adding/removing entities from Archetype
 			// Should implement a config variable to decide between fast addition/removal of entities or fast entities lookup
@@ -239,7 +251,7 @@ namespace apollo
 		}
 
 		template <typename... TComponent>
-		void copy(archetype& destination, entity entity)
+		void copy(archetype& destination, const entity& entity)
 		{
 			const std::size_t index = search(entity);
 			if (index >= m_entities.size())
@@ -255,7 +267,7 @@ namespace apollo
 		}
 
 		template <typename... TComponent>
-		void move(archetype& destination, entity entity)
+		void move(archetype& destination, const entity& entity)
 		{
 			const std::size_t index = search(entity);
 			if (index >= m_entities.size())
