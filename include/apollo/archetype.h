@@ -1,8 +1,9 @@
 #ifndef APOLLO_ARCHETYPE_H
 #define APOLLO_ARCHETYPE_H
 
-#include <algorithm>
+#include <vector>
 #include <optional>
+#include <algorithm>
 #include "component_storage.h"
 
 namespace apollo

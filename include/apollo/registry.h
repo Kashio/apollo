@@ -18,21 +18,21 @@ namespace apollo
 		std::vector<std::unique_ptr<system>> m_systems;
 		std::vector<std::size_t> m_entity_index;
 	private:
-		template <typename ClassType, typename ReturnType, typename... Args>
-		bool archetype_has_all_query_args(archetype* archetype, function_traits<ReturnType(ClassType::*)(Args...)const>)
+		template <typename ClassType, typename ReturnType, typename Entity, typename... Args>
+		bool archetype_has_all_query_args(archetype* archetype, function_traits<ReturnType(ClassType::*)(Entity, Args...)const>)
 		{
 			return archetype->has_all<std::decay_t<Args>...>();
 		}
 
-		template<typename Fn, typename ClassType, typename ReturnType, typename... Args>
-		void apply_to_archetype_components(archetype* archetype, Fn&& func, function_traits<ReturnType(ClassType::*)(Args...)const>)
+		template<typename Fn, typename ClassType, typename ReturnType, typename Entity, typename... Args>
+		void apply_to_archetype_components(archetype* archetype, Fn&& func, function_traits<ReturnType(ClassType::*)(Entity, Args...)const>)
 		{
 			std::tuple<std::vector<std::decay_t<Args>>&...> components{ *archetype->get_components<std::decay_t<Args>>()... };
 			auto size = std::get<0>(components).size();
 			for (std::size_t i = 0; i < size; ++i)
 			{
 				std::apply([&](auto&... vecs) {
-					func(vecs[i]...);
+					func(archetype->m_entities[i], vecs[i]...);
 				}, components);
 			}
 		}
@@ -88,11 +88,13 @@ namespace apollo
 		void for_each(Fn&& fn)
 		{
 			typedef function_traits<decltype(fn)> traits;
+			auto t = traits::self();
+			//static_assert(std::is_same<t::arg<0>, entity>::value, "first type parameter of query must be of type apollo::entity");
 			for (auto& archetype : m_archetypes)
 			{
-				if (archetype_has_all_query_args(archetype.get(), traits::self()))
+				if (archetype_has_all_query_args(archetype.get(), t))
 				{
-					apply_to_archetype_components(archetype.get(), fn, traits::self());
+					apply_to_archetype_components(archetype.get(), fn, t);
 				}
 			}
 		}

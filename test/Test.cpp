@@ -37,7 +37,7 @@ TEST(Test, Test1)
 
 	if (registry.any<transform, mass>(e1))
 	{
-		std::cout << "e1 has mass\n";
+		std::cout << "e1 has transform or mass\n";
 	}
 
 	//registry.destroy(e1);
