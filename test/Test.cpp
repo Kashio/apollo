@@ -30,6 +30,9 @@ TEST(Test, Test1)
 	}
 
 	registry.clear<mass>();
+	registry.patch(e1, [](transform& t) {
+		t.m_x = 88;
+	});
 
 	//registry.destroy(e1);
 

@@ -37,6 +37,15 @@ namespace apollo
 			}
 		}
 
+		template<typename Fn, typename ClassType, typename ReturnType, typename... Args>
+		void apply_to_archetype_entity_components(archetype* archetype, Fn&& func, function_traits<ReturnType(ClassType::*)(Args...)const>, const entity& entity)
+		{
+			auto components = archetype->get_components<std::decay_t<Args>...>(entity);
+			std::apply([&](auto&... component) {
+				func(component...);
+			}, components);
+		}
+
 		archetype* find_archetype_with_same_signature(archetype& archetpye)
 		{
 			for (const auto& a : m_archetypes)
@@ -177,6 +186,20 @@ namespace apollo
 			static_assert(((std::is_base_of<component<TComponents>, TComponents>::value) && ...), "type parameters TComponents must derive from component");
 			for (std::size_t i = 0; i < m_entity_index.size(); ++i)
 				((remove<TComponents>(i)), ...);
+		}
+
+		template <typename Fn>
+		void patch(const entity& entity, Fn&& fn)
+		{
+			if (m_entity_index[entity])
+			{
+				archetype* context = m_archetypes[m_entity_index[entity]].get();
+				typedef function_traits<decltype(fn)> traits;
+				if (archetype_has_all_query_args(context, traits::self()))
+				{
+					apply_to_archetype_entity_components(context, fn, traits::self(), entity);
+				}
+			}
 		}
 
 		template <typename TComponent>

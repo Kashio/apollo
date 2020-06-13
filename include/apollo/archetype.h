@@ -163,7 +163,7 @@ namespace apollo
 		std::tuple<TComponents&...> get_components(const entity& entity)
 		{
 			std::size_t index = search(entity);
-			std::tuple<TComponents&...> components{ ((get_components<TComponents>()[index]), ...) };
+			std::tuple<TComponents&...> components{ get_components<TComponents>()->operator[](index)... };
 			return components;
 		}
 
