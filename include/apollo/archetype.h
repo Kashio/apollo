@@ -2,6 +2,7 @@
 #define APOLLO_ARCHETYPE_H
 
 #include <algorithm>
+#include <optional>
 #include "component_storage.h"
 
 namespace apollo
@@ -48,6 +49,8 @@ namespace apollo
 		template<typename Component>
 		component_storage_impl<Component>* get_storage()
 		{
+			if (Component::id >= m_signature.size())
+				return nullptr;
 			int index = m_signature[Component::id];
 			if (index == invalid_storage_index)
 			{
@@ -108,7 +111,7 @@ namespace apollo
 		}
 
 		template<typename Component>
-		std::vector<Component>* get()
+		std::vector<Component>* get_components()
 		{
 			auto storage = get_storage<Component>();
 			if (storage)
@@ -116,6 +119,82 @@ namespace apollo
 				return &(storage->m_components);
 			}
 			return nullptr;
+		}
+
+		template<typename Component>
+		Component& get_component(const entity& entity)
+		{
+			std::size_t index = search(entity);
+			auto components = get_components<Component>();
+			return components->operator[](index);
+		}
+
+		template<typename Component>
+		Component* try_get_component(const entity& entity)
+		{
+			std::size_t index = search(entity);
+			if (index >= m_entities.size())
+				return nullptr;
+			auto components = get_components<Component>();
+			if (components)
+				return &components->operator[](index);
+			return nullptr;
+		}
+
+		template<typename Component>
+		Component& get_component_at(const std::size_t& index)
+		{
+			auto components = get_components<Component>();
+			return components->operator[](index);
+		}
+
+		template<typename Component>
+		Component* try_get_component_at(const std::size_t& index)
+		{
+			if (index >= m_entities.size())
+				return nullptr;
+			auto components = get_components<Component>();
+			if (components)
+				return &components->operator[](index);
+			return nullptr;
+		}
+
+		template<typename... TComponents>
+		std::tuple<TComponents&...> get_components(const entity& entity)
+		{
+			std::size_t index = search(entity);
+			std::tuple<TComponents&...> components{ ((get_components<TComponents>()[index]), ...) };
+			return components;
+		}
+
+		template<typename... TComponents>
+		std::optional<std::tuple<TComponents&...>> try_get_components(const entity& entity)
+		{
+			std::size_t index = search(entity);
+			if (index >= m_entities.size())
+				return {};
+			if (!has_all<TComponents...>())
+				return {};
+			std::tuple<TComponents&...> components{ get_components<TComponents>()->operator[](index)... };
+			return std::optional<std::tuple<TComponents&...>>{components};
+		}
+
+		template<typename... TComponents>
+		std::tuple<TComponents&...> get_components_at(const std::size_t& index)
+		{
+			std::tuple<TComponents&...> components{ get_components<TComponents>()->operator[](index)... };
+			return components;
+		}
+
+		template<typename... TComponents>
+		std::optional<std::tuple<TComponents&...>> try_get_components_at(const std::size_t& index)
+		{
+			if (index >= m_entities.size())
+				return {};
+			if (!has_all<TComponents...>())
+				return {};
+			std::tuple<TComponents&...> components{ get_components<TComponents>()->operator[](index)... };
+			return std::optional<std::tuple<TComponents&...>>{components};
 		}
 
 		void add(entity entity)

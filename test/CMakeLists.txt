@@ -1,4 +1,4 @@
-add_executable(testlib Test.cpp mass.h transform.h move_system.h)
+add_executable(testlib Test.cpp transform.h mass.h velocity.h move_system.h)
 
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 

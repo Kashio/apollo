@@ -27,7 +27,7 @@ namespace apollo
 		template<typename Fn, typename ClassType, typename ReturnType, typename... Args>
 		void apply_to_archetype_components(archetype* archetype, Fn&& func, function_traits<ReturnType(ClassType::*)(Args...)const>)
 		{
-			std::tuple<std::vector<std::decay_t<Args>>&...> components{ *archetype->get<std::decay_t<Args>>()... };
+			std::tuple<std::vector<std::decay_t<Args>>&...> components{ *archetype->get_components<std::decay_t<Args>>()... };
 			auto size = std::get<0>(components).size();
 			for (std::size_t i = 0; i < size; ++i)
 			{
@@ -103,7 +103,7 @@ namespace apollo
 		}
 
 		template <typename TComponent, typename... Args>
-		void emplace(entity entity, Args&&... args)
+		TComponent& emplace(entity entity, Args&&... args)
 		{
 			static_assert(std::is_base_of<component<TComponent>, TComponent>::value, "type parameter of this class must derive from component");
 			archetype* context = m_archetypes[m_entity_index[entity]].get();
@@ -132,6 +132,7 @@ namespace apollo
 			new_archetype->add(entity);
 			new_archetype->set<TComponent>(entity, std::forward<Args>(args)...);
 			context->move<TComponent>(*new_archetype, entity);
+			return new_archetype->get_component_at<TComponent>(new_archetype->m_entities.size() - 1);
 		}
 
 		template <typename TComponent>
@@ -166,6 +167,62 @@ namespace apollo
 				new_archetype->add(entity);
 				context->move<TComponent>(*new_archetype, entity);
 			}
+		}
+
+		template <typename TComponent>
+		TComponent& get(const entity& entity)
+		{
+			archetype* context = m_archetypes[m_entity_index[entity]].get();
+			return context->get_component<TComponent>(entity);
+		}
+
+		template <typename TComponent>
+		TComponent* try_get(const entity& entity)
+		{
+			archetype* context = m_archetypes[m_entity_index[entity]].get();
+			return context->try_get_component<TComponent>(entity);
+		}
+
+		template <typename TComponent>
+		TComponent& get_at(const std::size_t archetype_index, const std::size_t entity_index)
+		{
+			archetype* context = m_archetypes[archetype_index].get();
+			return context->get_component_at<TComponent>(entity_index);
+		}
+
+		template <typename TComponent>
+		TComponent* try_get_at(const std::size_t archetype_index, const std::size_t entity_index)
+		{
+			archetype* context = m_archetypes[archetype_index].get();
+			return context->try_get_component_at<TComponent>(entity_index);
+		}
+
+		template <typename... TComponents>
+		std::tuple<TComponents&...> get(const entity& entity)
+		{
+			archetype* context = m_archetypes[m_entity_index[entity]].get();
+			return context->get_components<TComponents...>(entity);
+		}
+
+		template <typename... TComponents>
+		auto try_get(const entity& entity)
+		{
+			archetype* context = m_archetypes[m_entity_index[entity]].get();
+			return context->try_get_components<TComponents...>(entity);
+		}
+
+		template <typename... TComponents>
+		std::tuple<TComponents&...> get_at(const std::size_t archetype_index, const std::size_t entity_index)
+		{
+			archetype* context = m_archetypes[archetype_index].get();
+			return context->get_components_at<TComponents...>(entity_index);
+		}
+
+		template <typename... TComponents>
+		auto try_get_at(const std::size_t archetype_index, const std::size_t entity_index)
+		{
+			archetype* context = m_archetypes[archetype_index].get();
+			return context->try_get_components_at<TComponents...>(entity_index);
 		}
 
 		inline const std::vector<std::unique_ptr<archetype>>& get_archetypes() const

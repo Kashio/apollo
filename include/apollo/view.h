@@ -236,20 +236,32 @@ namespace apollo
 		}
 
 		template <typename TComponent>
-		TComponent* get(const entity& entity)
+		TComponent& get(const entity& entity)
 		{
 			entity_iterator<false> it = std::find(begin(), end(), entity);
-			auto components = m_registry->get_archetypes()[it.get_archetype_indices()[it.get_archetype_index()]]->get<TComponent>();
-			if (components)
-				return &components->operator[](it.get_entity_index());
-			return nullptr;
+			return m_registry->get_at<TComponent>(it.get_archetype_indices()[it.get_archetype_index()], it.get_entity_index());
 		}
 
-		//template <typename... TComponents>
-		//std::tuple<TComponents&...> get(const entity& entity)
-		//{
+		template <typename TComponent>
+		TComponent* try_get(const entity& entity)
+		{
+			entity_iterator<false> it = std::find(begin(), end(), entity);
+			return m_registry->try_get_at<TComponent>(it.get_archetype_indices()[it.get_archetype_index()], it.get_entity_index());
+		}
 
-		//}
+		template <typename... TComponents>
+		std::tuple<TComponents&...> get(const entity& entity)
+		{
+			entity_iterator<false> it = std::find(begin(), end(), entity);
+			return m_registry->get_at<TComponents...>(it.get_archetype_indices()[it.get_archetype_index()], it.get_entity_index());
+		}
+
+		template <typename... TComponents>
+		auto try_get(const entity& entity)
+		{
+			entity_iterator<false> it = std::find(begin(), end(), entity);
+			return m_registry->try_get_at<TComponents...>(it.get_archetype_indices()[it.get_archetype_index()], it.get_entity_index());
+		}
 
 		iterator begin()
 		{

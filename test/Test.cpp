@@ -2,6 +2,7 @@
 #include <apollo/apollo.h>
 #include "transform.h"
 #include "mass.h"
+#include "velocity.h"
 #include "move_system.h"
 
 TEST(Test, Test1)
@@ -24,7 +25,7 @@ TEST(Test, Test1)
 
 	for (auto& entity : v1)
 	{
-		auto t = v1.get<transform>(entity);
+		auto& t = v1.try_get<mass, transform, velocity>(entity);
 		int x = 8;
 	}
 
