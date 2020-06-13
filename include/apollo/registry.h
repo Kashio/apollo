@@ -203,11 +203,19 @@ namespace apollo
 		}
 
 		template <typename... TComponents>
-		void has(const entity& entity)
+		bool has(const entity& entity)
 		{
 			static_assert(((std::is_base_of<component<TComponents>, TComponents>::value) && ...), "type parameters TComponents must derive from component");
 			archetype* context = m_archetypes[m_entity_index[entity]].get();
 			return context->has_all<TComponents...>();
+		}
+
+		template <typename... TComponents>
+		bool any(const entity& entity)
+		{
+			static_assert(((std::is_base_of<component<TComponents>, TComponents>::value) && ...), "type parameters TComponents must derive from component");
+			archetype* context = m_archetypes[m_entity_index[entity]].get();
+			return ((context->has_all<TComponents>()) || ...);
 		}
 
 		template <typename TComponent>

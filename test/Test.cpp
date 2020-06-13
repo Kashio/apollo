@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <iostream>
 #include <apollo/apollo.h>
 #include "transform.h"
 #include "mass.h"
@@ -33,6 +34,11 @@ TEST(Test, Test1)
 	registry.patch(e1, [](transform& t) {
 		t.m_x = 88;
 	});
+
+	if (registry.any<transform, mass>(e1))
+	{
+		std::cout << "e1 has mass\n";
+	}
 
 	//registry.destroy(e1);
 
