@@ -212,6 +212,15 @@ namespace apollo
 				((remove<TComponents>(i)), ...);
 		}
 
+		void clear()
+		{
+			for (std::size_t i = 0; i < m_entity_index.size(); ++i)
+			{
+				if (m_entity_index[i] != invalid_index && m_entity_index[i] != 0)
+					destroy(i);
+			}
+		}
+
 		template <typename Fn>
 		void patch(const entity& entity, Fn&& fn)
 		{
