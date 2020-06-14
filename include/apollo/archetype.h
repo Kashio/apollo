@@ -147,17 +147,6 @@ namespace apollo
 			return components->operator[](index);
 		}
 
-		template<typename Component>
-		Component* try_get_component_at(const std::size_t& index)
-		{
-			if (index >= m_entities.size())
-				return nullptr;
-			auto components = get_components<Component>();
-			if (components)
-				return &components->operator[](index);
-			return nullptr;
-		}
-
 		template<typename... TComponents>
 		std::tuple<TComponents&...> get_components(const entity& entity)
 		{
@@ -170,24 +159,6 @@ namespace apollo
 		std::optional<std::tuple<TComponents&...>> try_get_components(const entity& entity)
 		{
 			std::size_t index = search(entity);
-			if (index >= m_entities.size())
-				return {};
-			if (!has_all<TComponents...>())
-				return {};
-			std::tuple<TComponents&...> components{ get_components<TComponents>()->operator[](index)... };
-			return std::optional<std::tuple<TComponents&...>>{components};
-		}
-
-		template<typename... TComponents>
-		std::tuple<TComponents&...> get_components_at(const std::size_t& index)
-		{
-			std::tuple<TComponents&...> components{ get_components<TComponents>()->operator[](index)... };
-			return components;
-		}
-
-		template<typename... TComponents>
-		std::optional<std::tuple<TComponents&...>> try_get_components_at(const std::size_t& index)
-		{
 			if (index >= m_entities.size())
 				return {};
 			if (!has_all<TComponents...>())

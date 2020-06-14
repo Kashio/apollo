@@ -5,7 +5,6 @@
 #include "archetype.h"
 #include "system.h"
 #include "component.h"
-#include "view.h"
 #include "command/command_buffer.h"
 #include <vector>
 #include <tuple>
@@ -121,12 +120,6 @@ namespace apollo
 					apply_to_archetype_components(archetype.get(), fn, t);
 				}
 			}
-		}
-
-		template <typename... TComponents>
-		auto view()
-		{
-			return apollo::view<TComponents...>(this);
 		}
 
 		template <typename TSystem, typename... Args>
@@ -273,20 +266,6 @@ namespace apollo
 			return context->try_get_component<TComponent>(entity);
 		}
 
-		template <typename TComponent>
-		TComponent& get_at(const std::size_t archetype_index, const std::size_t entity_index)
-		{
-			archetype* context = m_archetypes[archetype_index].get();
-			return context->get_component_at<TComponent>(entity_index);
-		}
-
-		template <typename TComponent>
-		TComponent* try_get_at(const std::size_t archetype_index, const std::size_t entity_index)
-		{
-			archetype* context = m_archetypes[archetype_index].get();
-			return context->try_get_component_at<TComponent>(entity_index);
-		}
-
 		template <typename... TComponents>
 		std::tuple<TComponents&...> get(const entity& entity)
 		{
@@ -302,37 +281,18 @@ namespace apollo
 		}
 
 		template <typename... TComponents>
-		std::tuple<TComponents&...> get_at(const std::size_t archetype_index, const std::size_t entity_index)
+		std::vector<entity> get_entities() const
 		{
-			archetype* context = m_archetypes[archetype_index].get();
-			return context->get_components_at<TComponents...>(entity_index);
-		}
-
-		template <typename... TComponents>
-		auto try_get_at(const std::size_t archetype_index, const std::size_t entity_index)
-		{
-			archetype* context = m_archetypes[archetype_index].get();
-			return context->try_get_components_at<TComponents...>(entity_index);
-		}
-
-		inline const std::vector<std::unique_ptr<archetype>>& get_archetypes() const
-		{
-			return m_archetypes;
-		}
-
-		template <typename... TComponents>
-		std::vector<std::size_t> get_archetype_indices() const
-		{
-			std::vector<std::size_t> archretype_indices;
-			for (std::size_t i = 0; i < m_archetypes.size(); ++i)
+			std::vector<std::size_t> entities;
+			for (std::size_t i = 1; i < m_archetypes.size(); ++i)
 			{
 				auto& archetype = m_archetypes[i];
-				if (archetype->has_all<std::decay_t<TComponents>...>() && archetype->get_entities().size() > 0)
+				if (archetype->has_all<std::decay_t<TComponents>...>())
 				{
-					archretype_indices.push_back(i);
+					entities.insert(archetype->m_entities.begin(), archetype->m_entities.end());
 				}
 			}
-			return archretype_indices;
+			return entities;
 		}
 	};
 }

@@ -22,14 +22,6 @@ TEST(Test, Test1)
 
 	registry.remove<transform>(e2);
 
-	auto v1 = registry.view<transform>();
-
-	for (auto& entity : v1)
-	{
-		auto& t = v1.try_get<mass, transform, velocity>(entity);
-		int x = 8;
-	}
-
 	registry.clear<mass>();
 	registry.patch(e1, [](transform& t) {
 		t.m_x = 88;
