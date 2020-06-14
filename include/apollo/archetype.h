@@ -10,8 +10,6 @@ namespace apollo
 {
 	using storage_vec = std::vector<std::unique_ptr<component_storage>>;
 
-	const std::size_t invalid_storage_index = -1;
-
 	class archetype
 	{
 	private:
@@ -35,7 +33,7 @@ namespace apollo
 		{
 			if (m_signature.size() <= component_id)
 			{
-				m_signature.resize(component_id + 1, invalid_storage_index);
+				m_signature.resize(component_id + 1, invalid_index);
 			}
 			m_signature[component_id] = index;
 			++m_num_components;
@@ -43,7 +41,7 @@ namespace apollo
 
 		void remove_from_signature(const id_type component_id)
 		{
-			m_signature[component_id] = invalid_storage_index;
+			m_signature[component_id] = invalid_index;
 			--m_num_components;
 		}
 
@@ -53,7 +51,7 @@ namespace apollo
 			if (Component::id >= m_signature.size())
 				return nullptr;
 			int index = m_signature[Component::id];
-			if (index == invalid_storage_index)
+			if (index == invalid_index)
 			{
 				return nullptr;
 			}
@@ -64,7 +62,7 @@ namespace apollo
 		component_storage* get_storage(const id_type component_id)
 		{
 			int index = m_signature[component_id];
-			if (index == invalid_storage_index)
+			if (index == invalid_index)
 			{
 				return nullptr;
 			}
@@ -289,7 +287,7 @@ namespace apollo
 		template<typename... Component>
 		bool has_all()
 		{
-			return ((Component::id < m_signature.size() && m_signature[Component::id] != invalid_storage_index) && ...);
+			return ((Component::id < m_signature.size() && m_signature[Component::id] != invalid_index) && ...);
 		}
 
 		template<typename Component>
@@ -351,8 +349,8 @@ namespace apollo
 			return false;
 		for (std::size_t i = 0; i < lhs.m_signature.size(); ++i)
 		{
-			if ((lhs.m_signature[i] == invalid_storage_index && rhs.m_signature[i] != invalid_storage_index) ||
-				(lhs.m_signature[i] != invalid_storage_index && rhs.m_signature[i] == invalid_storage_index))
+			if ((lhs.m_signature[i] == invalid_index && rhs.m_signature[i] != invalid_index) ||
+				(lhs.m_signature[i] != invalid_index && rhs.m_signature[i] == invalid_index))
 				return false;
 		}
 		return true;

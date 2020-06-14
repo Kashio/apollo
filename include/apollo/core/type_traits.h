@@ -20,7 +20,7 @@ namespace apollo
 
 		using result_type = ReturnType;
 
-		template <size_t i>
+		template <std::size_t i>
 		using arg = typename std::tuple_element_t<i, std::tuple<Args...>>;
 	};
 }

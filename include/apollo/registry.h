@@ -18,6 +18,7 @@ namespace apollo
 		std::vector<std::unique_ptr<archetype>> m_archetypes;
 		std::vector<std::unique_ptr<system>> m_systems;
 		std::vector<std::size_t> m_entity_index;
+		std::vector<entity> destroyed_entities;
 	private:
 		template <typename ClassType, typename ReturnType, typename Entity, typename... Args>
 		bool archetype_has_all_query_args_with_entity(archetype* archetype, function_traits<ReturnType(ClassType::*)(Entity, Args...)const>)
@@ -72,16 +73,31 @@ namespace apollo
 		const entity& create()
 		{
 			static entity s_current_id = 0;
-			entity current = s_current_id++;
-			m_entity_index.push_back(0);
+			entity current;
+			if (destroyed_entities.size())
+			{
+				current = destroyed_entities.back();
+				destroyed_entities.pop_back();
+				m_entity_index[current] = 0;
+			}
+			else
+			{
+				current = s_current_id++;
+				m_entity_index.push_back(0);
+			}
 			return current;
 		}
 
 		void destroy(const entity& entity)
 		{
 			m_archetypes[m_entity_index[entity]]->remove(entity);
-			m_archetypes[0]->add(entity);
-			m_entity_index[entity] = 0;
+			m_entity_index[entity] = invalid_index;
+			destroyed_entities.push_back(entity);
+		}
+
+		bool valid(const entity& entity)
+		{
+			return m_entity_index[entity] == invalid_index;
 		}
 
 		void update()
@@ -97,7 +113,7 @@ namespace apollo
 		{
 			typedef function_traits<decltype(fn)> traits;
 			auto t = traits::self();
-			//static_assert(std::is_same<t::arg<0>, entity>::value, "first type parameter of query must be of type apollo::entity");
+			static_assert(std::is_same<std::remove_cv_t<std::remove_reference_t<traits::arg<0>>>, entity>::value, "first type parameter of query must be of type apollo::entity");
 			for (auto& archetype : m_archetypes)
 			{
 				if (archetype_has_all_query_args_with_entity(archetype.get(), t))
