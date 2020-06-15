@@ -4,6 +4,7 @@ set(headers
 	"${apollo_SOURCE_DIR}/include/apollo/component.h"
 	"${apollo_SOURCE_DIR}/include/apollo/component_storage.h"
 	"${apollo_SOURCE_DIR}/include/apollo/archetype.h"
+	"${apollo_SOURCE_DIR}/include/apollo/observer.h"
 	"${apollo_SOURCE_DIR}/include/apollo/command/command.h"
 	"${apollo_SOURCE_DIR}/include/apollo/command/command_buffer.h"
 	"${apollo_SOURCE_DIR}/include/apollo/command/destroy_command.h"

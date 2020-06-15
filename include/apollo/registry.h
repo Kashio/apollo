@@ -5,8 +5,10 @@
 #include "archetype.h"
 #include "system.h"
 #include "component.h"
+#include "observer.h"
 #include "command/command_buffer.h"
 #include <vector>
+#include <unordered_map>
 #include <tuple>
 #include <memory>
 
@@ -18,6 +20,7 @@ namespace apollo
 		std::vector<std::unique_ptr<system>> m_systems;
 		std::vector<std::size_t> m_entity_index;
 		std::vector<entity> destroyed_entities;
+		std::unordered_map<id_type, observer> m_on_construct_observers;
 	private:
 		template <typename ClassType, typename ReturnType, typename Entity, typename... Args>
 		bool archetype_has_all_query_args_with_entity(archetype* archetype, function_traits<ReturnType(ClassType::*)(Entity, Args...)const>)
@@ -67,6 +70,15 @@ namespace apollo
 		{
 			auto empty_archetype = new archetype(m_archetypes.size());
 			m_archetypes.emplace_back(empty_archetype);
+		}
+
+		template <typename Component>
+		observer& on_construct()
+		{
+			auto it = m_on_construct_observers.find(Component::id);
+			if (it == m_on_construct_observers.end())
+				m_on_construct_observers[Component::id] = observer();
+			return m_on_construct_observers[Component::id];
 		}
 
 		const entity& create()
@@ -165,6 +177,11 @@ namespace apollo
 			new_archetype->add(entity);
 			new_archetype->set_at<TComponent>(new_archetype->m_entities.size() - 1, std::forward<Args>(args)...);
 			context->move<TComponent>(*new_archetype, entity);
+
+			auto it = m_on_construct_observers.find(TComponent::id);
+			if (it != m_on_construct_observers.end())
+				it->second.notify(*this, entity);
+
 			return new_archetype->get_component_at<TComponent>(new_archetype->m_entities.size() - 1);
 		}
 
@@ -303,6 +320,30 @@ namespace apollo
 			}
 			return entities;
 		}
+
+		std::vector<entity> get_entities() const
+		{
+			std::vector<std::size_t> entities;
+			for (std::size_t i = 0; i < m_entity_index.size(); ++i)
+			{
+				if (m_entity_index[i] != invalid_index)
+					entities.push_back(i);
+			}
+			return entities;
+		}
+
+		std::vector<entity> get_orphan_entities() const
+		{
+			std::vector<std::size_t> entities;
+			for (std::size_t i = 0; i < m_entity_index.size(); ++i)
+			{
+				if (m_entity_index[i] == 0)
+					entities.push_back(i);
+			}
+			return entities;
+		}
+
+
 	};
 }
 

@@ -9,6 +9,11 @@
 TEST(Test, Test1)
 {
 	apollo::registry registry;
+
+	auto callback_id = registry.on_construct<transform>().connect([](apollo::registry&, apollo::entity& e) {
+		std::cout << "entity(" << e << ") was added transform component\n";
+	});
+
 	apollo::entity e1 = registry.create();
 	apollo::entity e2 = registry.create();
 	apollo::entity e3 = registry.create();
@@ -39,4 +44,6 @@ TEST(Test, Test1)
 	registry.update();
 
 	registry.update();
+
+	registry.on_construct<transform>().disconnect(callback_id);
 }
