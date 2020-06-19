@@ -8,6 +8,8 @@ set(headers
 	"${apollo_SOURCE_DIR}/include/apollo/command/command.h"
 	"${apollo_SOURCE_DIR}/include/apollo/command/command_buffer.h"
 	"${apollo_SOURCE_DIR}/include/apollo/command/destroy_command.h"
+	"${apollo_SOURCE_DIR}/include/apollo/command/remove_command.h"
+	"${apollo_SOURCE_DIR}/include/apollo/command/clear_command.h"
 	"${apollo_SOURCE_DIR}/include/apollo/core/common.h"
 	"${apollo_SOURCE_DIR}/include/apollo/core/type_traits.h")
 

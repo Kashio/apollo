@@ -21,6 +21,7 @@ namespace apollo
 		std::vector<std::size_t> m_entity_index;
 		std::vector<entity> destroyed_entities;
 		std::unordered_map<id_type, observer> m_on_construct_observers;
+		std::unordered_map<id_type, observer> m_on_destroy_observers;
 	private:
 		template <typename ClassType, typename ReturnType, typename Entity, typename... Args>
 		bool archetype_has_all_query_args_with_entity(archetype* archetype, function_traits<ReturnType(ClassType::*)(Entity, Args...)const>)
@@ -81,6 +82,15 @@ namespace apollo
 			return m_on_construct_observers[Component::id];
 		}
 
+		template <typename Component>
+		observer& on_destroy()
+		{
+			auto it = m_on_destroy_observers.find(Component::id);
+			if (it == m_on_destroy_observers.end())
+				m_on_destroy_observers[Component::id] = observer();
+			return m_on_destroy_observers[Component::id];
+		}
+
 		const entity& create()
 		{
 			static entity s_current_id = 0;
@@ -99,11 +109,23 @@ namespace apollo
 			return current;
 		}
 
-		void destroy(const entity& entity)
+		void destroy(entity& entity)
 		{
-			m_archetypes[m_entity_index[entity]]->remove(entity);
+			archetype* context = m_archetypes[m_entity_index[entity]].get();
+
+			context->remove(entity);
 			m_entity_index[entity] = invalid_index;
 			destroyed_entities.push_back(entity);
+
+			for (std::size_t i = 0; i < context->m_signature.size(); ++i)
+			{
+				if (context->m_signature[i] != invalid_index)
+				{
+					auto it = m_on_destroy_observers.find(i);
+					if (it != m_on_destroy_observers.end())
+						it->second.notify(*this, entity);
+				}
+			}
 		}
 
 		bool valid(const entity& entity)
@@ -115,7 +137,7 @@ namespace apollo
 		{
 			for (auto& system : m_systems)
 			{
-				system->update(this);
+				system->update(*this);
 			}
 		}
 
@@ -218,6 +240,10 @@ namespace apollo
 				m_entity_index[entity] = new_archetype->get_id();
 				new_archetype->add(entity);
 				context->move<TComponent>(*new_archetype, entity);
+
+				auto it = m_on_destroy_observers.find(TComponent::id);
+				if (it != m_on_destroy_observers.end())
+					it->second.notify(*this, entity);
 			}
 		}
 

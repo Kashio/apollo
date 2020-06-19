@@ -11,7 +11,7 @@ namespace apollo
 		system() = default;
 	public:
 		~system() = default;
-		virtual void update(registry* registry) = 0;
+		virtual void update(registry& registry) = 0;
 	};
 }
 

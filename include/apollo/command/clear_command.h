@@ -6,20 +6,18 @@
 
 namespace apollo
 {
-	class destroy_command : public command
+	template <typename... Components>
+	class clear_command : public command
 	{
-	private:
-		entity& m_entity;
 	public:
-		destroy_command(registry* registry, entity& entity)
+		remove_command(registry* registry)
 			: command(registry)
-			, m_entity(entity)
 		{
 		}
 
 		void execute() override
 		{
-			m_registry->destroy(m_entity);
+			m_registry->clear<Components...>(m_entity);
 		}
 	};
 }
