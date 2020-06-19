@@ -10,12 +10,16 @@ TEST(Test, Test1)
 {
 	apollo::registry registry;
 
-	auto callback_id = registry.on_construct<transform>().connect([](apollo::registry&, apollo::entity& e) {
+	auto callback_id = registry.on_construct<transform>().connect([](apollo::registry&, apollo::entity const & e) {
 		std::cout << "entity(" << e << ") transform component was added\n";
 	});
 
-	auto callback_id2 = registry.on_destroy<mass>().connect([](apollo::registry&, apollo::entity& e) {
+	auto callback_id2 = registry.on_destroy<mass>().connect([](apollo::registry&, apollo::entity const & e) {
 		std::cout << "entity(" << e << ") mass component was removed\n";
+	});
+
+	auto callback_id3 = registry.on_update<transform>().connect([](apollo::registry&, apollo::entity const & e) {
+		std::cout << "entity(" << e << ") transform component was updated\n";
 	});
 
 	apollo::entity e1 = registry.create();
@@ -51,4 +55,5 @@ TEST(Test, Test1)
 
 	registry.on_construct<transform>().disconnect(callback_id);
 	registry.on_destroy<mass>().disconnect(callback_id2);
+	registry.on_update<transform>().disconnect(callback_id3);
 }

@@ -22,6 +22,7 @@ namespace apollo
 		std::vector<entity> destroyed_entities;
 		std::unordered_map<id_type, observer> m_on_construct_observers;
 		std::unordered_map<id_type, observer> m_on_destroy_observers;
+		std::unordered_map<id_type, observer> m_on_update_observers;
 	private:
 		template <typename ClassType, typename ReturnType, typename Entity, typename... Args>
 		bool archetype_has_all_query_args_with_entity(archetype* archetype, function_traits<ReturnType(ClassType::*)(Entity, Args...)const>)
@@ -57,6 +58,20 @@ namespace apollo
 			}, components);
 		}
 
+		template<typename Component>
+		void apply_to_on_update_observers(const entity& entity)
+		{
+			auto it = m_on_update_observers.find(Component::id);
+			if (it != m_on_update_observers.end())
+				it->second.notify(*this, entity);
+		}
+
+		template<typename ClassType, typename ReturnType, typename... Args>
+		void apply_to_on_update_observers(const entity& entity, function_traits<ReturnType(ClassType::*)(Args...)const>)
+		{
+			((apply_to_on_update_observers<std::decay_t<Args>>(entity)), ...);
+		}
+
 		archetype* find_archetype_with_same_signature(archetype& archetpye)
 		{
 			for (const auto& a : m_archetypes)
@@ -84,6 +99,15 @@ namespace apollo
 
 		template <typename Component>
 		observer& on_destroy()
+		{
+			auto it = m_on_destroy_observers.find(Component::id);
+			if (it == m_on_destroy_observers.end())
+				m_on_destroy_observers[Component::id] = observer();
+			return m_on_destroy_observers[Component::id];
+		}
+
+		template <typename Component>
+		observer& on_update()
 		{
 			auto it = m_on_destroy_observers.find(Component::id);
 			if (it == m_on_destroy_observers.end())
@@ -274,6 +298,7 @@ namespace apollo
 				if (archetype_has_all_query_args_without_entity(context, traits::self()))
 				{
 					apply_to_archetype_entity_components(context, fn, traits::self(), entity);
+					apply_to_on_update_observers(entity, traits::self());
 				}
 			}
 		}
@@ -285,6 +310,10 @@ namespace apollo
 			{
 				archetype* context = m_archetypes[m_entity_index[entity]].get();
 				context->set<TComponent>(entity, std::forward<Args>(args)...);
+
+				auto it = m_on_update_observers.find(TComponent::id);
+				if (it != m_on_update_observers.end())
+					it->second.notify(*this, entity);
 			}
 		}
 
@@ -339,7 +368,7 @@ namespace apollo
 			for (std::size_t i = 1; i < m_archetypes.size(); ++i)
 			{
 				auto& archetype = m_archetypes[i];
-				if (archetype->has_all<std::decay_t<TComponents>...>())
+				if (archetype->has_all<TComponents...>())
 				{
 					entities.insert(archetype->m_entities.begin(), archetype->m_entities.end());
 				}

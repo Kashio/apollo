@@ -7,7 +7,7 @@
 
 namespace apollo
 {
-	using Callback = std::function<void(registry&, entity&)>;
+	using Callback = std::function<void(registry&, entity const &)>;
 
 	class observer
 	{
@@ -28,7 +28,7 @@ namespace apollo
 				m_callbacks.erase(id);
 		}
 
-		void notify(registry& r, entity& e)
+		void notify(registry& r, entity const & e)
 		{
 			for (auto& callback : m_callbacks)
 				callback.second.operator()(r, e);
