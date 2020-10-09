@@ -22,6 +22,17 @@ target_include_directories(apollo INTERFACE
                        $<INSTALL_INTERFACE:${APOLLO_INC_INSTALL_DIR}>
 					   )
 
+FetchContent_Declare(xenium
+                     GIT_REPOSITORY https://github.com/Kashio/xenium.git
+					 GIT_TAG master
+        )
+FetchContent_MakeAvailable(xenium)
+
+message(STATUS "xenium include dir: ${xenium_SOURCE_DIR}")
+message(STATUS "xenium binary dir: ${xenium_BINARY_DIR}")
+
+target_link_libraries(apollo INTERFACE xenium)
+
 set(generated_dir "${CMAKE_CURRENT_BINARY_DIR}/generated")
 
 set(project_config "${generated_dir}/${PROJECT_NAME}Config.cmake")
@@ -44,9 +55,9 @@ if (APOLLO_ENABLE_INSTALL)
 			FRAMEWORK DESTINATION ${APOLLO_FRAMEWORK_INSTALL_DIR})
 
 	install(
-		DIRECTORY "${APOLLO_SOURCE_DIR}/include/apollo"
+		DIRECTORY "${apollo_SOURCE_DIR}/include/apollo"
 		DESTINATION ${APOLLO_INC_INSTALL_DIR}
-		FILES_MATCHING PATTERN "*.*h")
+		FILES_MATCHING PATTERN "*.h")
 
 	install(
       FILES "${project_config}" "${version_config}"

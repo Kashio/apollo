@@ -50,7 +50,7 @@ namespace apollo
 		{
 			if (Component::id >= m_signature.size())
 				return nullptr;
-			int index = m_signature[Component::id];
+			size_t index = m_signature[Component::id];
 			if (index == invalid_index)
 			{
 				return nullptr;
@@ -61,7 +61,7 @@ namespace apollo
 
 		component_storage* get_storage(const id_type component_id)
 		{
-			int index = m_signature[component_id];
+			size_t index = m_signature[component_id];
 			if (index == invalid_index)
 			{
 				return nullptr;

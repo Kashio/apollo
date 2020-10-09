@@ -49,9 +49,12 @@ TEST(Test, Test1)
 
 	registry.create_system<move_system>();
 
-	registry.update();
+	for (std::size_t i = 0; i < 10; ++i)
+	{
+		registry.update();
+	}
 
-	registry.update();
+	std::this_thread::sleep_for(std::chrono::milliseconds(60000));
 
 	registry.on_construct<transform>().disconnect(callback_id);
 	registry.on_destroy<mass>().disconnect(callback_id2);

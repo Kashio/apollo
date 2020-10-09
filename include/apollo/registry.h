@@ -7,14 +7,18 @@
 #include "component.h"
 #include "observer.h"
 #include "command/command_buffer.h"
+#include "job/job.h"
+#include "job/thread_pool.h"
 #include <vector>
 #include <unordered_map>
 #include <tuple>
 #include <memory>
+#include <sstream>
 
 namespace apollo
 {
-	class registry {
+	class registry
+	{
 	private:
 		std::vector<std::unique_ptr<archetype>> m_archetypes;
 		std::vector<std::unique_ptr<system>> m_systems;
@@ -23,6 +27,7 @@ namespace apollo
 		std::unordered_map<id_type, observer> m_on_construct_observers;
 		std::unordered_map<id_type, observer> m_on_destroy_observers;
 		std::unordered_map<id_type, observer> m_on_update_observers;
+		thread_pool m_thread_pool;
 	private:
 		template <typename ClassType, typename ReturnType, typename Entity, typename... Args>
 		bool archetype_has_all_query_args_with_entity(archetype* archetype, function_traits<ReturnType(ClassType::*)(Entity, Args...)const>)
@@ -45,7 +50,7 @@ namespace apollo
 			{
 				std::apply([&](auto&... vecs) {
 					func(archetype->m_entities[i], vecs[i]...);
-				}, components);
+					}, components);
 			}
 		}
 
@@ -55,7 +60,7 @@ namespace apollo
 			auto components = archetype->get_components<std::decay_t<Args>...>(entity);
 			std::apply([&](auto&... component) {
 				func(component...);
-			}, components);
+				}, components);
 		}
 
 		template<typename Component>
@@ -83,6 +88,7 @@ namespace apollo
 		}
 	public:
 		registry()
+			: m_thread_pool(std::thread::hardware_concurrency())
 		{
 			auto empty_archetype = new archetype(m_archetypes.size());
 			m_archetypes.emplace_back(empty_archetype);
@@ -115,7 +121,7 @@ namespace apollo
 			return m_on_destroy_observers[Component::id];
 		}
 
-		const entity& create()
+		const entity create()
 		{
 			static entity s_current_id = 0;
 			entity current;
@@ -161,30 +167,52 @@ namespace apollo
 		{
 			for (auto& system : m_systems)
 			{
-				system->update(*this);
+				system->update();
 			}
 		}
 
 		template <typename Fn>
-		void for_each(Fn&& fn)
+		job for_each(Fn&& fn, job& dep)
 		{
 			typedef function_traits<decltype(fn)> traits;
 			auto t = traits::self();
 			static_assert(std::is_same<std::remove_cv_t<std::remove_reference_t<traits::arg<0>>>, entity>::value, "first type parameter of query must be of type apollo::entity");
+			std::vector<std::function<void()>> queries;
 			for (auto& archetype : m_archetypes)
 			{
 				if (archetype_has_all_query_args_with_entity(archetype.get(), t))
 				{
-					apply_to_archetype_components(archetype.get(), fn, t);
+					queries.emplace_back([this, &archetype, &fn, &t]() {
+						this->apply_to_archetype_components(archetype.get(), fn, t);
+						});
 				}
 			}
+			return job(&m_thread_pool, [dep = std::move(dep), queries = std::move(queries)]() {
+				std::stringstream s;
+				s << "dep[" << dep.m_id << "] - ";
+				if (dep.m_handle.valid())
+				{
+					s << " valid\n";
+					//std::cout << s.str();
+					dep.m_handle.complete();
+				}
+				else
+				{
+					s << " not valid\n";
+					//std::cout << s.str();
+				}
+				for (auto& query : queries)
+				{
+					query();
+				}
+			});
 		}
 
 		template <typename TSystem, typename... Args>
 		const TSystem& create_system(Args&&... args)
 		{
 			static_assert(std::is_base_of<system, TSystem>::value, "type parameter of this class must derive from system");
-			m_systems.push_back(std::make_unique<TSystem>(std::forward<Args>(args)...));
+			m_systems.push_back(std::make_unique<TSystem>(*this, std::forward<Args>(args)...));
 			return *dynamic_cast<TSystem*>(m_systems.back().get());
 		}
 
